@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, Alert, Linking, Switch, Modal, Platform } from 'react-native';
-import { TextInput, TouchableOpacity, View, Text } from 'react-native';
+import { StyleSheet, ScrollView, Alert, Linking, Switch, Platform } from 'react-native';
+import { TextInput, TouchableOpacity } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
@@ -9,8 +10,6 @@ export default function NewEventScreen() {
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date(Date.now() + 60 * 60 * 1000)); // 1 hour later
   const [isAllDay, setIsAllDay] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [currentDateField, setCurrentDateField] = useState<'fromDate' | 'fromTime' | 'toDate' | 'toTime'>('fromDate');
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString();
@@ -65,151 +64,54 @@ export default function NewEventScreen() {
     }
   };
 
-  const openDatePicker = (field: 'fromDate' | 'fromTime' | 'toDate' | 'toTime') => {
-    setCurrentDateField(field);
-    setShowDatePicker(true);
-  };
-
-  const handleDateChange = (selectedDate: Date) => {
-    const now = new Date();
-    
-    switch (currentDateField) {
-      case 'fromDate':
-        const newFromDate = new Date(fromDate);
-        newFromDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-        setFromDate(newFromDate);
-        
-        // Auto-update toDate to be at least 1 hour after fromDate
-        if (newFromDate >= toDate) {
-          setToDate(new Date(newFromDate.getTime() + 60 * 60 * 1000));
-        }
-        break;
-        
-      case 'fromTime':
-        const newFromTime = new Date(fromDate);
-        newFromTime.setHours(selectedDate.getHours(), selectedDate.getMinutes());
-        setFromDate(newFromTime);
-        
-        // Auto-update toDate to be at least 1 hour after fromDate
-        if (newFromTime >= toDate) {
-          setToDate(new Date(newFromTime.getTime() + 60 * 60 * 1000));
-        }
-        break;
-        
-      case 'toDate':
-        const newToDate = new Date(toDate);
-        newToDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-        if (newToDate >= fromDate) {
-          setToDate(newToDate);
-        } else {
-          Alert.alert('Error', 'End date cannot be before start date');
-        }
-        break;
-        
-      case 'toTime':
-        const newToTime = new Date(toDate);
-        newToTime.setHours(selectedDate.getHours(), selectedDate.getMinutes());
-        if (newToTime > fromDate) {
-          setToDate(newToTime);
-        } else {
-          Alert.alert('Error', 'End time must be after start time');
-        }
-        break;
+  const onFromDateChange = (event: any, selectedDate?: Date) => {
+    if (selectedDate) {
+      const newFromDate = new Date(fromDate);
+      newFromDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      setFromDate(newFromDate);
+      
+      // Auto-update toDate to be at least 1 hour after fromDate
+      if (newFromDate >= toDate) {
+        setToDate(new Date(newFromDate.getTime() + 60 * 60 * 1000));
+      }
     }
-    
-    setShowDatePicker(false);
   };
 
-  const SimpleDateTimePicker = () => {
-    const [tempDate, setTempDate] = useState(
-      currentDateField === 'fromDate' || currentDateField === 'fromTime' ? fromDate : toDate
-    );
+  const onFromTimeChange = (event: any, selectedTime?: Date) => {
+    if (selectedTime) {
+      const newFromDate = new Date(fromDate);
+      newFromDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
+      setFromDate(newFromDate);
+      
+      // Auto-update toDate to be at least 1 hour after fromDate
+      if (newFromDate >= toDate) {
+        setToDate(new Date(newFromDate.getTime() + 60 * 60 * 1000));
+      }
+    }
+  };
 
-    const isTimeMode = currentDateField === 'fromTime' || currentDateField === 'toTime';
+  const onToDateChange = (event: any, selectedDate?: Date) => {
+    if (selectedDate) {
+      const newToDate = new Date(toDate);
+      newToDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      if (newToDate >= fromDate) {
+        setToDate(newToDate);
+      } else {
+        Alert.alert('Error', 'End date cannot be before start date');
+      }
+    }
+  };
 
-    return (
-      <Modal
-        visible={showDatePicker}
-        transparent={true}
-        animationType="slide"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ThemedText type="subtitle" style={styles.modalTitle}>
-              {isTimeMode ? 'Select Time' : 'Select Date'}
-            </ThemedText>
-            
-            {isTimeMode ? (
-              <View style={styles.timePickerContainer}>
-                <View style={styles.timeInputContainer}>
-                  <Text style={styles.timeLabel}>Hour:</Text>
-                  <TextInput
-                    style={styles.timeInput}
-                    value={tempDate.getHours().toString().padStart(2, '0')}
-                    onChangeText={(text) => {
-                      const hour = parseInt(text) || 0;
-                      if (hour >= 0 && hour <= 23) {
-                        const newDate = new Date(tempDate);
-                        newDate.setHours(hour);
-                        setTempDate(newDate);
-                      }
-                    }}
-                    keyboardType="numeric"
-                    maxLength={2}
-                  />
-                </View>
-                <View style={styles.timeInputContainer}>
-                  <Text style={styles.timeLabel}>Minute:</Text>
-                  <TextInput
-                    style={styles.timeInput}
-                    value={tempDate.getMinutes().toString().padStart(2, '0')}
-                    onChangeText={(text) => {
-                      const minute = parseInt(text) || 0;
-                      if (minute >= 0 && minute <= 59) {
-                        const newDate = new Date(tempDate);
-                        newDate.setMinutes(minute);
-                        setTempDate(newDate);
-                      }
-                    }}
-                    keyboardType="numeric"
-                    maxLength={2}
-                  />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.datePickerContainer}>
-                <TextInput
-                  style={styles.dateInput}
-                  value={tempDate.toISOString().split('T')[0]}
-                  onChangeText={(text) => {
-                    const newDate = new Date(text);
-                    if (!isNaN(newDate.getTime())) {
-                      setTempDate(newDate);
-                    }
-                  }}
-                  placeholder="YYYY-MM-DD"
-                />
-              </View>
-            )}
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowDatePicker(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={() => handleDateChange(tempDate)}
-              >
-                <Text style={styles.confirmButtonText}>Confirm</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    );
+  const onToTimeChange = (event: any, selectedTime?: Date) => {
+    if (selectedTime) {
+      const newToDate = new Date(toDate);
+      newToDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
+      if (newToDate > fromDate) {
+        setToDate(newToDate);
+      } else {
+        Alert.alert('Error', 'End time must be after start time');
+      }
+    }
   };
 
   return (
@@ -245,21 +147,31 @@ export default function NewEventScreen() {
         {/* From Date/Time */}
         <ThemedView style={styles.fieldContainer}>
           <ThemedText type="defaultSemiBold" style={styles.label}>From</ThemedText>
-          <ThemedView style={styles.dateTimeContainer}>
-            <TouchableOpacity
-              style={styles.dateTimeButton}
-              onPress={() => openDatePicker('fromDate')}
-            >
-              <ThemedText>{formatDate(fromDate)}</ThemedText>
-            </TouchableOpacity>
+          <ThemedView style={styles.dateTimeRow}>
+            <ThemedView style={styles.dateTimeColumn}>
+              <ThemedText type="defaultSemiBold" style={styles.subLabel}>Date</ThemedText>
+              <ThemedView style={styles.pickerContainer}>
+                <DateTimePicker
+                  value={fromDate}
+                  mode="date"
+                  display="default"
+                  onChange={onFromDateChange}
+                />
+              </ThemedView>
+            </ThemedView>
             
             {!isAllDay && (
-              <TouchableOpacity
-                style={styles.dateTimeButton}
-                onPress={() => openDatePicker('fromTime')}
-              >
-                <ThemedText>{formatTime(fromDate)}</ThemedText>
-              </TouchableOpacity>
+              <ThemedView style={styles.dateTimeColumn}>
+                <ThemedText type="defaultSemiBold" style={styles.subLabel}>Time</ThemedText>
+                <ThemedView style={styles.pickerContainer}>
+                  <DateTimePicker
+                    value={fromDate}
+                    mode="time"
+                    display="default"
+                    onChange={onFromTimeChange}
+                  />
+                </ThemedView>
+              </ThemedView>
             )}
           </ThemedView>
         </ThemedView>
@@ -267,21 +179,31 @@ export default function NewEventScreen() {
         {/* To Date/Time */}
         <ThemedView style={styles.fieldContainer}>
           <ThemedText type="defaultSemiBold" style={styles.label}>To</ThemedText>
-          <ThemedView style={styles.dateTimeContainer}>
-            <TouchableOpacity
-              style={styles.dateTimeButton}
-              onPress={() => openDatePicker('toDate')}
-            >
-              <ThemedText>{formatDate(toDate)}</ThemedText>
-            </TouchableOpacity>
+          <ThemedView style={styles.dateTimeRow}>
+            <ThemedView style={styles.dateTimeColumn}>
+              <ThemedText type="defaultSemiBold" style={styles.subLabel}>Date</ThemedText>
+              <ThemedView style={styles.pickerContainer}>
+                <DateTimePicker
+                  value={toDate}
+                  mode="date"
+                  display="default"
+                  onChange={onToDateChange}
+                />
+              </ThemedView>
+            </ThemedView>
             
             {!isAllDay && (
-              <TouchableOpacity
-                style={styles.dateTimeButton}
-                onPress={() => openDatePicker('toTime')}
-              >
-                <ThemedText>{formatTime(toDate)}</ThemedText>
-              </TouchableOpacity>
+              <ThemedView style={styles.dateTimeColumn}>
+                <ThemedText type="defaultSemiBold" style={styles.subLabel}>Time</ThemedText>
+                <ThemedView style={styles.pickerContainer}>
+                  <DateTimePicker
+                    value={toDate}
+                    mode="time"
+                    display="default"
+                    onChange={onToTimeChange}
+                  />
+                </ThemedView>
+              </ThemedView>
             )}
           </ThemedView>
         </ThemedView>
@@ -292,8 +214,6 @@ export default function NewEventScreen() {
             Create Event in Outlook
           </ThemedText>
         </TouchableOpacity>
-
-        <SimpleDateTimePicker />
       </ThemedView>
     </ScrollView>
   );
@@ -356,83 +276,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
-  modalOverlay: {
+  pickerContainer: {
+    marginTop: 10,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    padding: 10,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  dateTimeColumn: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    width: '80%',
-    maxWidth: 300,
-  },
-  modalTitle: {
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#000',
-  },
-  datePickerContainer: {
-    marginBottom: 20,
-  },
-  dateInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    color: '#000',
-    textAlign: 'center',
-  },
-  timePickerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  timeInputContainer: {
-    alignItems: 'center',
-  },
-  timeLabel: {
-    fontSize: 14,
+  subLabel: {
     marginBottom: 8,
-    color: '#000',
-  },
-  timeInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 8,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    color: '#000',
-    textAlign: 'center',
-    width: 60,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  modalButton: {
-    padding: 12,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f0f0f0',
-  },
-  confirmButton: {
-    backgroundColor: '#0078d4',
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontSize: 16,
-  },
-  confirmButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 
