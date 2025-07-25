@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, ScrollView, Alert, Linking, Switch, Platform } from 'react-native';
 import { TextInput, TouchableOpacity } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as WebBrowser from 'expo-web-browser';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
@@ -112,13 +113,26 @@ export default function NewEventScreen() {
           webDeepLink += `&allday=true`;
         }
         
-        console.log('Outlook mobile app not found, trying web version:', webDeepLink);
+        console.log('Outlook mobile app not found, opening web version in in-app browser:', webDeepLink);
         
-        const canOpenWeb = await Linking.canOpenURL(webDeepLink);
-        if (canOpenWeb) {
-          await Linking.openURL(webDeepLink);
-        } else {
-          Alert.alert('Error', 'Cannot open Outlook. Please make sure Outlook is installed or accessible via web.');
+        try {
+          const result = await WebBrowser.openBrowserAsync(webDeepLink, {
+            presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+            controlsColor: '#0078d4',
+            toolbarColor: '#ffffff',
+            showTitle: true,
+            enableBarCollapsing: false,
+          });
+          
+          console.log('WebBrowser result:', result);
+          
+          // Optional: Handle the result if needed
+          if (result.type === 'cancel') {
+            console.log('User cancelled the web browser');
+          }
+        } catch (webError) {
+          console.error('Error opening web browser:', webError);
+          Alert.alert('Error', 'Cannot open Outlook web calendar. Please try again.');
         }
       }
     } catch (error) {
@@ -313,6 +327,9 @@ export default function NewEventScreen() {
           <ThemedText type="defaultSemiBold" style={styles.submitButtonText}>
             Create Event in Outlook
           </ThemedText>
+          <ThemedText style={styles.submitButtonSubtext}>
+            Opens in Outlook app or web browser
+          </ThemedText>
         </TouchableOpacity>
       </ThemedView>
     </ScrollView>
@@ -379,6 +396,12 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  submitButtonSubtext: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.8,
+    marginTop: 2,
   },
   pickerContainer: {
     marginTop: 10,
