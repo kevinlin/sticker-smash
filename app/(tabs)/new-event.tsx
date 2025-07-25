@@ -46,6 +46,7 @@ export default function NewEventScreen() {
       if (canOpen) {
         await Linking.openURL(deepLink);
       } else {
+        console.log('Outlook mobile app not found, trying web version');
         // Fallback to web version if mobile app is not available
         const webDeepLink = `https://outlook.office.com/calendar/deeplink/compose?subject=${encodeURIComponent(subject)}&startdt=${startDateTime}${!isAllDay ? `&enddt=${endDateTime}` : ''}`;
         
@@ -146,10 +147,9 @@ export default function NewEventScreen() {
 
         {/* From Date/Time */}
         <ThemedView style={styles.fieldContainer}>
-          <ThemedText type="defaultSemiBold" style={styles.label}>From</ThemedText>
           <ThemedView style={styles.dateTimeRow}>
             <ThemedView style={styles.dateTimeColumn}>
-              <ThemedText type="defaultSemiBold" style={styles.subLabel}>Date</ThemedText>
+              <ThemedText type="defaultSemiBold" style={styles.label}>From Date</ThemedText>
               <ThemedView style={styles.pickerContainer}>
                 <DateTimePicker
                   value={fromDate}
@@ -162,7 +162,7 @@ export default function NewEventScreen() {
             
             {!isAllDay && (
               <ThemedView style={styles.dateTimeColumn}>
-                <ThemedText type="defaultSemiBold" style={styles.subLabel}>Time</ThemedText>
+                <ThemedText type="defaultSemiBold" style={styles.label}>From Time</ThemedText>
                 <ThemedView style={styles.pickerContainer}>
                   <DateTimePicker
                     value={fromDate}
@@ -178,10 +178,9 @@ export default function NewEventScreen() {
 
         {/* To Date/Time */}
         <ThemedView style={styles.fieldContainer}>
-          <ThemedText type="defaultSemiBold" style={styles.label}>To</ThemedText>
           <ThemedView style={styles.dateTimeRow}>
             <ThemedView style={styles.dateTimeColumn}>
-              <ThemedText type="defaultSemiBold" style={styles.subLabel}>Date</ThemedText>
+              <ThemedText type="defaultSemiBold" style={styles.label}>To Date</ThemedText>
               <ThemedView style={styles.pickerContainer}>
                 <DateTimePicker
                   value={toDate}
@@ -194,7 +193,7 @@ export default function NewEventScreen() {
             
             {!isAllDay && (
               <ThemedView style={styles.dateTimeColumn}>
-                <ThemedText type="defaultSemiBold" style={styles.subLabel}>Time</ThemedText>
+                <ThemedText type="defaultSemiBold" style={styles.label}>To Time</ThemedText>
                 <ThemedView style={styles.pickerContainer}>
                   <DateTimePicker
                     value={toDate}
