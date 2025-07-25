@@ -7,6 +7,9 @@ import { ThemedView } from '@/components/ThemedView';
 
 export default function NewEventScreen() {
   const [subject, setSubject] = useState('');
+  const [location, setLocation] = useState('');
+  const [description, setDescription] = useState('');
+  const [attendees, setAttendees] = useState('');
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date(Date.now() + 60 * 60 * 1000)); // 1 hour later
   const [isAllDay, setIsAllDay] = useState(false);
@@ -20,6 +23,20 @@ export default function NewEventScreen() {
   };
 
   const formatDateTimeForOutlook = (date: Date) => {
+    // For mobile app, use ISO 8601 format without milliseconds and Z suffix
+    // Format: YYYY-MM-DDTHH:MM:SS (interpreted in device's local time zone)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
+
+  const formatDateTimeForOutlookWeb = (date: Date) => {
+    // For web version, use full ISO format
     return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
   };
 
@@ -33,11 +50,31 @@ export default function NewEventScreen() {
       const startDateTime = formatDateTimeForOutlook(fromDate);
       const endDateTime = formatDateTimeForOutlook(toDate);
       
-      // Use mobile app deeplink scheme for Outlook mobile
-      let deepLink = `ms-outlook://events/new?subject=${encodeURIComponent(subject)}&startdt=${startDateTime}`;
+      // Build mobile app deeplink with correct parameters
+      let deepLink = `ms-outlook://events/new?title=${encodeURIComponent(subject)}`;
       
+      // Add start and end times (use start/end instead of startdt/enddt for mobile)
+      deepLink += `&start=${startDateTime}`;
       if (!isAllDay) {
-        deepLink += `&enddt=${endDateTime}`;
+        deepLink += `&end=${endDateTime}`;
+      }
+      
+      // Add optional parameters if provided
+      if (location.trim()) {
+        deepLink += `&location=${encodeURIComponent(location)}`;
+      }
+      
+      if (description.trim()) {
+        deepLink += `&description=${encodeURIComponent(description)}`;
+      }
+      
+      if (attendees.trim()) {
+        deepLink += `&attendees=${encodeURIComponent(attendees)}`;
+      }
+      
+      // Add allday parameter for all-day events
+      if (isAllDay) {
+        deepLink += `&allday=true`;
       }
 
       console.log('Opening Outlook mobile app with URL:', deepLink);
@@ -48,7 +85,32 @@ export default function NewEventScreen() {
       } else {
         console.log('Outlook mobile app not found, trying web version');
         // Fallback to web version if mobile app is not available
-        const webDeepLink = `https://outlook.office.com/calendar/deeplink/compose?subject=${encodeURIComponent(subject)}&startdt=${startDateTime}${!isAllDay ? `&enddt=${endDateTime}` : ''}`;
+        const webStartDateTime = formatDateTimeForOutlookWeb(fromDate);
+        const webEndDateTime = formatDateTimeForOutlookWeb(toDate);
+        
+        let webDeepLink = `https://outlook.office.com/calendar/deeplink/compose?subject=${encodeURIComponent(subject)}`;
+        webDeepLink += `&startdt=${webStartDateTime}`;
+        
+        if (!isAllDay) {
+          webDeepLink += `&enddt=${webEndDateTime}`;
+        }
+        
+        // Add optional parameters for web version
+        if (location.trim()) {
+          webDeepLink += `&location=${encodeURIComponent(location)}`;
+        }
+        
+        if (description.trim()) {
+          webDeepLink += `&body=${encodeURIComponent(description)}`;
+        }
+        
+        if (attendees.trim()) {
+          webDeepLink += `&to=${encodeURIComponent(attendees)}`;
+        }
+        
+        if (isAllDay) {
+          webDeepLink += `&allday=true`;
+        }
         
         console.log('Outlook mobile app not found, trying web version:', webDeepLink);
         
@@ -129,6 +191,45 @@ export default function NewEventScreen() {
             onChangeText={setSubject}
             placeholder="Enter event subject"
             placeholderTextColor="#999"
+          />
+        </ThemedView>
+
+        {/* Location Field */}
+        <ThemedView style={styles.fieldContainer}>
+          <ThemedText type="defaultSemiBold" style={styles.label}>Location</ThemedText>
+          <TextInput
+            style={styles.textInput}
+            value={location}
+            onChangeText={setLocation}
+            placeholder="Enter event location"
+            placeholderTextColor="#999"
+          />
+        </ThemedView>
+
+        {/* Description Field */}
+        <ThemedView style={styles.fieldContainer}>
+          <ThemedText type="defaultSemiBold" style={styles.label}>Description</ThemedText>
+          <TextInput
+            style={[styles.textInput, styles.multilineInput]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Enter event description"
+            placeholderTextColor="#999"
+            multiline
+            numberOfLines={3}
+          />
+        </ThemedView>
+
+        {/* Attendees Field */}
+        <ThemedView style={styles.fieldContainer}>
+          <ThemedText type="defaultSemiBold" style={styles.label}>Attendees</ThemedText>
+          <TextInput
+            style={styles.textInput}
+            value={attendees}
+            onChangeText={setAttendees}
+            placeholder="Enter email addresses (separated by semicolons)"
+            placeholderTextColor="#999"
+            keyboardType="email-address"
           />
         </ThemedView>
 
@@ -245,6 +346,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
     color: '#000',
+  },
+  multilineInput: {
+    height: 80,
+    textAlignVertical: 'top',
   },
   switchContainer: {
     flexDirection: 'row',
